@@ -1,0 +1,67 @@
+workflow StartTaggedVMs
+
+{
+
+    Param(
+
+        [Parameter(Mandatory=$true)]
+
+        [String]
+
+        $TagName,
+
+        [Parameter(Mandatory=$true)]
+
+        [String]
+
+        $TagValue,
+
+        [Parameter(Mandatory=$true)]
+
+        $TagRG,
+
+        [Parameter(Mandatory=$true)]
+
+        [Boolean]
+
+        $Start
+
+        )
+
+# Association to the Azure subscribtion
+
+$Conn = Get-AutomationConnection -Name AzureRunAsConnection
+
+Add-AzureRMAccount -ServicePrincipal -Tenant $Conn.TenantID -ApplicationId $Conn.ApplicationID -CertificateThumbprint $Conn.CertificateThumbprint
+
+# Getting all the VM in the resource group concerned
+
+$listVM = Get-AzureRMVM -ResourcegroupName "$TagRG"
+
+# Starting VM if Tag autostart is configured to yes
+
+foreach -parallel ($VM in $ListVM)
+
+{
+
+if ($vm.Tags.$TagName -eq "$TagValue")
+
+{
+
+Start-AzureRMVM -ResourceGroupName "$TagRG" -Name $VM.Name
+
+Write-Output $vm.Name " has been started automatically !"
+
+}
+
+else
+
+{
+
+Write-Output $vm.Name " NOT started (no tag configured or NO value)"
+
+       }
+
+   }
+
+}

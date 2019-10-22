@@ -1,0 +1,67 @@
+workflow StopTaggedVMs
+
+{
+
+    Param(
+
+        [Parameter(Mandatory=$true)]
+
+        [String]
+
+        $TagName,
+
+        [Parameter(Mandatory=$true)]
+
+        [String]
+
+        $TagValue,
+
+        [Parameter(Mandatory=$true)]
+
+        $TagRG,
+
+        [Parameter(Mandatory=$true)]
+
+        [Boolean]
+
+        $Shutdown
+
+        )
+
+# Association to the Azure subscribtion
+
+$Conn = Get-AutomationConnection -Name AzureRunAsConnection
+
+Add-AzureRMAccount -ServicePrincipal -Tenant $Conn.TenantID -ApplicationId $Conn.ApplicationID -CertificateThumbprint $Conn.CertificateThumbprint
+
+# Getting all the VM in the resource group concerned
+
+$listVM = Get-AzureRMVM -ResourcegroupName "$TagRG"
+
+# Stopping VM if Tag autoshutdown is configured to yes
+
+foreach -parallel ($VM in $ListVM)
+
+{
+
+if ($vm.Tags.$TagName -eq "$TagValue")
+
+{
+
+Stop-AzureRMVM -ResourceGroupName "$TagRG" -Name $VM.Name -Force
+
+Write-Output $vm.Name " has been stopped automatically !"
+
+    }
+
+else
+
+{
+
+Write-Output $vm.Name " NOT stopped (no tag configured or NO value)"
+
+      }
+
+   }
+
+}
